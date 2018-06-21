@@ -32,7 +32,6 @@ type Configuration struct {
 	GDAX     map[string]string
 }
 
-
 func removeBookEntry(s []gdax.BookEntry, i int) []gdax.BookEntry {
 	s[len(s)-1], s[i] = s[i], s[len(s)-1]
 	return s[:len(s)-1]
@@ -423,7 +422,7 @@ type BuyWallDataLayer struct {
 
 func NewBuyWallDataLayer(book *OrderBookEngine) BuyWallDataLayer {
 	dl := BuyWallDataLayer{Book: book}
-	dl.channel = make(chan int) 
+	dl.channel = make(chan int)
 	//
 	dl.largest_buy_wall_depth = 0
 	dl.largest_buy_wall_position = 0
@@ -1460,7 +1459,6 @@ ExecutingStopLosses:
 		}
 	}
 	//}
-
 
 	//////
 	// (3) Ensure that all current LIMIT buy offers are still likely to be profitable.
