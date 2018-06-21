@@ -1,0 +1,149 @@
+<html>
+<head>
+<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<div id="plotly-div"></div>
+<ul>
+<li>open BUY orders: <span id="open-buy-orders"></span></li>
+<li>open SELL orders: <span id="open-sell-orders"></span></li>
+<li>stop losses: <span id="open-stoplosses"></span></li>
+<li>ETH wallet balance: <span id="wallet-balance"></span></li>
+
+</ul>
+<script>
+bids_x = [];
+bids_y = [];
+asks_x = [];
+asks_y = [];
+shapesList = [];
+data = [{
+  connectgaps: true, 
+  fill: 'tozeroy', 
+  fillcolor: 'rgba(214, 39, 40, 0.26)', 
+  line: {color: 'rgb(214, 39, 40)'}, 
+  mode: 'lines', 
+  name: 'Asks', 
+  x: asks_x,
+  y: asks_y,
+  type: 'scatter'
+},{
+  connectgaps: true, 
+  fill: 'tozeroy', 
+  fillcolor: 'rgba(44, 160, 44, 0.29)', 
+  line: {color: 'rgb(44, 160, 44)'}, 
+  mode: 'lines', 
+  name: 'Bids', 
+  x: bids_x,
+  y: bids_y,
+  type: 'scatter'
+}];
+layout = {
+  paper_bgcolor: 'rgb(18,27,27)', 
+  plot_bgcolor: 'rgb(18,27,27)', 
+  showlegend: false, 
+  title: 'Bot Depth Chart', 
+  titlefont: {color: 'rgb(111, 147, 151)'}, 
+  xaxis: {
+    gridcolor: 'rgba(111, 147, 151, 0.37)', 
+    tickfont: {color: 'rgb(111,147,151)'}, 
+    title: 'Price', 
+    titlefont: {color: 'rgb(111,147,151)'}
+  }, 
+  yaxis: {
+    gridcolor: 'rgba(111, 147, 151, 0.37)', 
+    tickfont: {color: 'rgb(111, 147, 151)'}, 
+    title: 'Cumulative Depth', 
+    titlefont: {color: 'rgb(111, 147, 151)'}
+  },
+  shapes: shapesList
+};
+Plotly.plot('plotly-div', {
+  data: data,
+  layout: layout
+});
+function doPoll(){
+	$.ajax({ 
+	    type: 'GET', 
+	    url: 'ajax/depth', 
+	    dataType: 'json',
+	    success: function (ajaxdata) { 
+		    console.log(ajaxdata)
+		    bids_x = [];
+		    bids_y = [];
+		    asks_x = [];
+		    asks_y = [];
+	    	ajaxdata.bids.forEach(function(pair) {
+	    		bids_x.push(pair[0])
+	    		bids_y.push(pair[1])
+	    	});
+	    	ajaxdata.asks.forEach(function(pair) {
+	    		asks_x.push(pair[0])
+	    		asks_y.push(pair[1])
+	    	});
+	    	data[0].x = asks_x;
+	    	data[0].y = asks_y;
+	    	data[1].x = bids_x;
+	    	data[1].y = bids_y;
+	    	max_y = Math.max.apply(null, asks_y.concat(bids_y));
+	    	
+        shapesList = [];
+
+        ajaxdata.buy_orders.forEach(function(price) {
+          shapesList.push({
+            'type': 'line',
+            'x0': price,
+            'y0': 0,
+            'x1': price,
+            'y1': max_y,
+            'line': {
+                'color': 'rgba(55, 128, 191, 0.5)',
+                'width': 3,
+                'dash' : '',
+            }});
+        });
+        ajaxdata.sell_orders.forEach(function(price) {
+          shapesList.push({
+            'type': 'line',
+            'x0': price,
+            'y0': 0,
+            'x1': price,
+            'y1': max_y,
+            'line': {
+                'color': 'rgba(214, 39, 40, 0.5)',
+                'width': 3,
+                'dash' : '',
+            }});
+        });
+        ajaxdata.stoplosses.forEach(function(price) {
+          shapesList.push({
+            'type': 'line',
+            'x0': price,
+            'y0': 0,
+            'x1': price,
+            'y1': max_y,
+            'line': {
+                'color': 'rgba(214, 39, 40, 0.5)',
+                'width': 2,
+                'dash' : 'dot',
+            }});
+        });
+        layout.shapes = shapesList;
+
+	    	$('span#open-buy-orders').text(ajaxdata.buy_orders.length.toString());
+	    	$('span#open-sell-orders').text(ajaxdata.sell_orders.length.toString());
+        $('span#open-stoplosses').text(ajaxdata.stoplosses.length.toString());
+	    	$('span#wallet-balance').text(ajaxdata.wallet_balance.toString())
+	        Plotly.redraw('plotly-div');
+        	setTimeout(doPoll,250);   
+	    }
+	});
+}
+doPoll();
+</script>
+</body>
+</html>
